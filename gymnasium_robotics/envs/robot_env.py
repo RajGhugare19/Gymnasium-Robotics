@@ -175,10 +175,24 @@ class BaseRobotEnv(GoalEnv):
                 the ``info`` returned by :meth:`step`.
         """
         super().reset(seed=seed)
-        did_reset_sim = False
-        while not did_reset_sim:
-            did_reset_sim = self._reset_sim()
-        self.goal = self._sample_goal().copy()
+            
+        if options is None:
+            did_reset_sim = False
+            while not did_reset_sim:
+                did_reset_sim = self._reset_sim()
+
+            self.goal = self._sample_goal().copy()
+        else:
+            if "gripper_pos" in options and options["gripper_pos"] is not None:
+                self._gripper_setup(options["gripper_pos"])
+            
+            did_reset_sim = False
+            while not did_reset_sim:
+                did_reset_sim = self._reset_sim()
+
+            if "goal_pos" in options and options["goal_pos"] is not None:
+                self.goal = options["goal_pos"]
+
         obs = self._get_obs()
         if self.render_mode == "human":
             self.render()
@@ -292,7 +306,6 @@ class MujocoRobotEnv(BaseRobotEnv):
 
         self.model.vis.global_.offwidth = self.width
         self.model.vis.global_.offheight = self.height
-
         self._env_setup(initial_qpos=self.initial_qpos)
         self.initial_time = self.data.time
         self.initial_qpos = np.copy(self.data.qpos)
